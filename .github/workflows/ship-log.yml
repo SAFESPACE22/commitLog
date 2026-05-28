@@ -1,0 +1,48 @@
+name: Ship Log Generator
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'ship-log.md'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-ship-log:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Generate and prepend ship log entry
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+          PUSH_DATE: ${{ github.event.head_commit.timestamp }}
+          PUSHER_NAME: ${{ github.event.pusher.name }}
+          REPO_NAME: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: python .github/scripts/generate_ship_log.py
+
+      - name: Commit and push ship-log.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ship-log.md
+          git diff --staged --quiet || git commit -m "docs: update ship-log"
+          git push
