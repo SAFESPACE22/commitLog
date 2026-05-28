@@ -12,7 +12,7 @@ Given a list of git commits, write a concise, human-readable summary in the
 style of a captain's log. Focus on what changed and why it matters.
 Keep it to 3-5 sentences. Use plain prose — no markdown headers or bullet lists."""
 
-GEMINI_MODEL = "gemini-1.5-flash"  # swap for gemini-1.5-pro, gemini-2.0-flash, etc.
+GEMINI_MODEL = "gemini-2.0-flash"  # swap for gemini-2.5-flash, gemini-2.5-pro, etc.
 
 # ---------------------------------------------------------------------------
 
