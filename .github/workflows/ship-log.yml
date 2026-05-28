@@ -30,7 +30,7 @@ jobs:
 
       - name: Generate and prepend ship log entry
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.event.after }}
           PUSH_DATE: ${{ github.event.head_commit.timestamp }}

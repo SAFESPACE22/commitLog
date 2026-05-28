@@ -13,14 +13,11 @@ Given a list of git commits, write a concise, human-readable summary in the
 style of a captain's log. Focus on what changed and why it matters.
 Keep it to 3-5 sentences. Use plain prose — no markdown headers or bullet lists."""
 
-GEMINI_MODEL = "gemini-2.0-flash"  # swap for gemini-2.5-flash, gemini-2.5-pro, etc.
+MODEL = "google/gemini-2.0-flash-exp:free"  # any model slug from openrouter.ai/models
 
 # ---------------------------------------------------------------------------
 
-GEMINI_API_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/"
-    f"{GEMINI_MODEL}:generateContent"
-)
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 def get_commit_logs(before_sha: str, after_sha: str) -> str:
@@ -41,15 +38,15 @@ def get_commit_logs(before_sha: str, after_sha: str) -> str:
     return logs if logs else "No commits found."
 
 
-def call_gemini(
+def call_openrouter(
     commit_logs: str,
     push_date: str,
     pusher_name: str,
     repo_name: str,
     branch: str,
 ) -> str:
-    """Send commit logs to the Gemini API and return the generated summary."""
-    api_key = os.environ["GEMINI_API_KEY"]
+    """Send commit logs to OpenRouter and return the generated summary."""
+    api_key = os.environ["OPENROUTER_API_KEY"]
 
     user_message = (
         f"Repository: {repo_name}\n"
@@ -61,16 +58,13 @@ def call_gemini(
     )
 
     payload = {
-        "system_instruction": {
-            "parts": [{"text": SYSTEM_PROMPT}]
-        },
-        "contents": [
-            {"parts": [{"text": user_message}]}
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user",   "content": user_message},
         ],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 512,
-        },
+        "temperature": 0.7,
+        "max_tokens": 512,
     }
 
     max_retries = 5
@@ -78,8 +72,11 @@ def call_gemini(
 
     for attempt in range(1, max_retries + 1):
         response = requests.post(
-            f"{GEMINI_API_URL}?key={api_key}",
-            headers={"Content-Type": "application/json"},
+            OPENROUTER_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
             json=payload,
             timeout=30,
         )
@@ -92,9 +89,9 @@ def call_gemini(
 
         response.raise_for_status()
         data = response.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return data["choices"][0]["message"]["content"].strip()
 
-    raise RuntimeError(f"Gemini API still rate-limiting after {max_retries} attempts.")
+    raise RuntimeError(f"OpenRouter still rate-limiting after {max_retries} attempts.")
 
 
 def prepend_to_ship_log(entry: str, push_date: str, after_sha: str) -> None:
@@ -141,7 +138,7 @@ def main() -> None:
     print(f"Commits found:\n{commit_logs}\n")
 
     print("Calling Gemini API...")
-    summary = call_gemini(commit_logs, push_date, pusher_name, repo_name, branch)
+    summary = call_openrouter(commit_logs, push_date, pusher_name, repo_name, branch)
     print(f"Summary:\n{summary}\n")
 
     print("Updating ship-log.md...")
