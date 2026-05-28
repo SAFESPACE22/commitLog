@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 import requests
 from datetime import datetime, timezone
 
@@ -72,16 +73,28 @@ def call_gemini(
         },
     }
 
-    response = requests.post(
-        f"{GEMINI_API_URL}?key={api_key}",
-        headers={"Content-Type": "application/json"},
-        json=payload,
-        timeout=30,
-    )
-    response.raise_for_status()
+    max_retries = 5
+    backoff = 10  # seconds
 
-    data = response.json()
-    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    for attempt in range(1, max_retries + 1):
+        response = requests.post(
+            f"{GEMINI_API_URL}?key={api_key}",
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        )
+
+        if response.status_code == 429:
+            wait = backoff * attempt
+            print(f"Rate limited (attempt {attempt}/{max_retries}). Retrying in {wait}s...")
+            time.sleep(wait)
+            continue
+
+        response.raise_for_status()
+        data = response.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+    raise RuntimeError(f"Gemini API still rate-limiting after {max_retries} attempts.")
 
 
 def prepend_to_ship_log(entry: str, push_date: str, after_sha: str) -> None:
