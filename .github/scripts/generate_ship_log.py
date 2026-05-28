@@ -13,11 +13,11 @@ Given a list of git commits, write a concise, human-readable summary in the
 style of a captain's log. Focus on what changed and why it matters.
 Keep it to 3-5 sentences. Use plain prose — no markdown headers or bullet lists."""
 
-MODEL = "meta-llama/llama-3.3-70b-instruct:free"  # any model slug from openrouter.ai/models
+MODEL = "gpt-4o-mini"  # swap for gpt-4o, gpt-4.1, etc.
 
 # ---------------------------------------------------------------------------
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
 
 def get_commit_logs(before_sha: str, after_sha: str) -> str:
@@ -38,15 +38,15 @@ def get_commit_logs(before_sha: str, after_sha: str) -> str:
     return logs if logs else "No commits found."
 
 
-def call_openrouter(
+def call_openai(
     commit_logs: str,
     push_date: str,
     pusher_name: str,
     repo_name: str,
     branch: str,
 ) -> str:
-    """Send commit logs to OpenRouter and return the generated summary."""
-    api_key = os.environ["OPENROUTER_API_KEY"]
+    """Send commit logs to OpenAI and return the generated summary."""
+    api_key = os.environ["OPENAI_API_KEY"]
 
     user_message = (
         f"Repository: {repo_name}\n"
@@ -72,7 +72,7 @@ def call_openrouter(
 
     for attempt in range(1, max_retries + 1):
         response = requests.post(
-            OPENROUTER_API_URL,
+            OPENAI_API_URL,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
@@ -91,7 +91,7 @@ def call_openrouter(
         data = response.json()
         return data["choices"][0]["message"]["content"].strip()
 
-    raise RuntimeError(f"OpenRouter still rate-limiting after {max_retries} attempts.")
+    raise RuntimeError(f"OpenAI still rate-limiting after {max_retries} attempts.")
 
 
 def prepend_to_ship_log(entry: str, push_date: str, after_sha: str) -> None:
@@ -137,8 +137,8 @@ def main() -> None:
     commit_logs = get_commit_logs(before_sha, after_sha)
     print(f"Commits found:\n{commit_logs}\n")
 
-    print("Calling OpenRouter API...")
-    summary = call_openrouter(commit_logs, push_date, pusher_name, repo_name, branch)
+    print("Calling OpenAI API...")
+    summary = call_openai(commit_logs, push_date, pusher_name, repo_name, branch)
     print(f"Summary:\n{summary}\n")
 
     print("Updating ship-log.md...")
