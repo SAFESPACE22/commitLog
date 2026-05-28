@@ -13,7 +13,7 @@ Given a list of git commits, write a concise, human-readable summary in the
 style of a captain's log. Focus on what changed and why it matters.
 Keep it to 3-5 sentences. Use plain prose — no markdown headers or bullet lists."""
 
-MODEL = "google/gemini-2.0-flash-exp:free"  # any model slug from openrouter.ai/models
+MODEL = "meta-llama/llama-3.3-70b-instruct:free"  # any model slug from openrouter.ai/models
 
 # ---------------------------------------------------------------------------
 
