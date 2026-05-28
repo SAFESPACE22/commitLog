@@ -137,7 +137,7 @@ def main() -> None:
     commit_logs = get_commit_logs(before_sha, after_sha)
     print(f"Commits found:\n{commit_logs}\n")
 
-    print("Calling Gemini API...")
+    print("Calling OpenRouter API...")
     summary = call_openrouter(commit_logs, push_date, pusher_name, repo_name, branch)
     print(f"Summary:\n{summary}\n")
 
